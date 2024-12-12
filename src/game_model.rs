@@ -18,8 +18,17 @@ impl Default for CellState {
 
 pub type GameBoard = [[CellState; 3]; 3];
 
-pub fn place_piece(piece: &Piece, coordinate: (usize, usize), board: &mut GameBoard) {
+pub fn place_piece(
+    piece: &Piece,
+    coordinate: (usize, usize),
+    board: &mut GameBoard,
+) -> Result<(), String> {
+    if matches!(&board[coordinate.0][coordinate.1], CellState::Owned(_)) {
+        return Err(String::from("Spot on board is alrady occupied"));
+    }
+
     board[coordinate.0][coordinate.1] = CellState::Owned(piece.to_owned());
+    Ok(())
 }
 
 pub fn determine_winner_of_line(line: &[CellState; 3]) -> Option<&Piece> {
@@ -58,24 +67,39 @@ mod tests {
     }
 
     #[test]
-    fn test_place_x() {
+    fn test_place_x_on_empty_cell() {
         let mut game_board = GameBoard::default();
         game_board[0][0] = CellState::Owned(Piece::X);
 
         let mut game_board2 = GameBoard::default();
-        place_piece(&Piece::X, (0, 0), &mut game_board2);
+        let result = place_piece(&Piece::X, (0, 0), &mut game_board2);
 
+        assert_eq!(result, Ok(()));
         assert_eq!(game_board[0][0], game_board2[0][0]);
     }
 
     #[test]
-    fn test_place_o() {
+    fn test_place_o_on_empty_cell() {
         let mut game_board = GameBoard::default();
         game_board[0][0] = CellState::Owned(Piece::O);
 
         let mut game_board2 = GameBoard::default();
-        place_piece(&Piece::O, (0, 0), &mut game_board2);
+        let result = place_piece(&Piece::O, (0, 0), &mut game_board2);
+
+        assert_eq!(result, Ok(()));
         assert_eq!(game_board[0][0], game_board2[0][0]);
+    }
+
+    #[test]
+    fn test_place_piece_on_owned_cell() {
+        let mut game_board = GameBoard::default();
+        game_board[0][0] = CellState::Owned(Piece::O);
+        let board_with_only_o_placed = game_board.clone();
+
+        let result = place_piece(&Piece::X, (0, 0), &mut game_board);
+
+        assert!(result.is_err());
+        assert_eq!(game_board, board_with_only_o_placed);
     }
 
     #[test]
@@ -90,10 +114,11 @@ mod tests {
         let mut game_board = GameBoard::default();
         let x = &Piece::X;
 
-        place_piece(x, (0, 0), &mut game_board);
-        place_piece(x, (0, 1), &mut game_board);
-        place_piece(x, (0, 2), &mut game_board);
+        let result = place_piece(x, (0, 0), &mut game_board)
+            .and_then(|_| place_piece(x, (0, 1), &mut game_board))
+            .and_then(|_| place_piece(x, (0, 2), &mut game_board));
 
+        assert_eq!(result, Ok(()));
         assert_eq!(Some(x), determine_winner_of_line(&game_board[0]));
     }
 
@@ -102,10 +127,11 @@ mod tests {
         let mut game_board = GameBoard::default();
         let o = &Piece::O;
 
-        place_piece(o, (0, 0), &mut game_board);
-        place_piece(o, (0, 1), &mut game_board);
-        place_piece(o, (0, 2), &mut game_board);
+        let result = place_piece(o, (0, 0), &mut game_board)
+            .and_then(|_| place_piece(o, (0, 1), &mut game_board))
+            .and_then(|_| place_piece(o, (0, 2), &mut game_board));
 
+        assert_eq!(result, Ok(()));
         assert_eq!(Some(o), determine_winner_of_line(&game_board[0]));
     }
 }
