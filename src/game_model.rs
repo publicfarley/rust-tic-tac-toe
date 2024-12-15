@@ -1,5 +1,3 @@
-use std::ops::RangeInclusive;
-
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Piece {
     X,
@@ -33,7 +31,7 @@ pub fn place_piece(
     Ok(())
 }
 
-pub fn determine_winner_of_line(line: &[CellState; 3]) -> Option<&Piece> {
+pub fn determine_winner_of_line<'a>(line: &'a Vec<&'a CellState>) -> Option<&'a Piece> {
     let first_piece = match &line[0] {
         CellState::Owned(piece) => Some(piece),
         CellState::Empty => None,
@@ -53,67 +51,46 @@ pub fn determine_winner_of_line(line: &[CellState; 3]) -> Option<&Piece> {
     }
 }
 
-const CELL_IDS: RangeInclusive<usize> = 0..=2;
-
 pub fn is_winner(board: &GameBoard) -> bool {
-    for row_index in CELL_IDS {
-        let row = &board[row_index];
-
-        if determine_winner_of_line(&row).is_some() {
+    for row in grab_rows(board) {
+        if determine_winner_of_line(&row.iter().collect()).is_some() {
             return true;
         }
     }
 
-    for column_index in CELL_IDS {
-        let column: &[CellState; 3] = &[
-            board[0][column_index].clone(),
-            board[1][column_index].clone(),
-            board[2][column_index].clone(),
-        ];
-
-        if determine_winner_of_line(column).is_some() {
+    for column in grab_columns(board) {
+        if determine_winner_of_line(&column).is_some() {
             return true;
         }
     }
 
-    let column_0_diagonal: &[CellState; 3] = &[
-        board[0][0].clone(),
-        board[1][1].clone(),
-        board[2][2].clone(),
-    ];
-
-    if determine_winner_of_line(column_0_diagonal).is_some() {
-        return true;
-    }
-
-    let column_2_diagonal: &[CellState; 3] = &[
-        board[0][2].clone(),
-        board[1][1].clone(),
-        board[2][0].clone(),
-    ];
-
-    if determine_winner_of_line(column_2_diagonal).is_some() {
-        return true;
+    for diagonal in grab_diagonals(board) {
+        if determine_winner_of_line(&diagonal).is_some() {
+            return true;
+        }
     }
 
     false
 }
 
-// fn grab_columns(board: &GameBoard) -> Vec<Vec<&CellState>> {
-//     let mut columns_vector: Vec<Vec<&CellState>> = Vec::new();
+fn grab_rows(board: &GameBoard) -> &[[CellState; 3]] {
+    &board[0..=2]
+}
 
-//     for column_index in CELL_IDS {
-//         let column = vec![
-//             &board[0][column_index],
-//             &board[1][column_index],
-//             &board[2][column_index],
-//         ];
+fn grab_columns(board: &GameBoard) -> Vec<Vec<&CellState>> {
+    let column0: Vec<_> = board.iter().map(|row| &row[0..=0][0]).collect();
+    let column1: Vec<_> = board.iter().map(|row| &row[1..=1][0]).collect();
+    let column2: Vec<_> = board.iter().map(|row| &row[2..=2][0]).collect();
 
-//         columns_vector.push(column);
-//     }
+    vec![column0, column1, column2]
+}
 
-//     columns_vector
-// }
+fn grab_diagonals(board: &GameBoard) -> Vec<Vec<&CellState>> {
+    let left_to_right_diagonal: Vec<_> = vec![&board[0][0], &board[1][1], &board[2][2]];
+    let right_to_left_diagonal: Vec<_> = vec![&board[0][2], &board[1][1], &board[2][0]];
+
+    vec![left_to_right_diagonal, right_to_left_diagonal]
+}
 
 #[cfg(test)]
 mod tests {
@@ -170,7 +147,10 @@ mod tests {
     fn test_empty_row_has_no_winner() {
         let game_board = GameBoard::default();
 
-        assert_eq!(None, determine_winner_of_line(&game_board[0]));
+        assert_eq!(
+            None,
+            determine_winner_of_line(&game_board[0].iter().collect())
+        );
     }
 
     #[test]
@@ -183,7 +163,10 @@ mod tests {
             .and_then(|_| place_piece(x, (0, 2), &mut game_board));
 
         assert_eq!(result, Ok(()));
-        assert_eq!(Some(x), determine_winner_of_line(&game_board[0]));
+        assert_eq!(
+            Some(x),
+            determine_winner_of_line(&game_board[0].iter().collect())
+        );
     }
 
     #[test]
@@ -196,7 +179,10 @@ mod tests {
             .and_then(|_| place_piece(o, (0, 2), &mut game_board));
 
         assert_eq!(result, Ok(()));
-        assert_eq!(Some(o), determine_winner_of_line(&game_board[0]));
+        assert_eq!(
+            Some(o),
+            determine_winner_of_line(&game_board[0].iter().collect())
+        );
     }
 
     #[test]
@@ -237,7 +223,7 @@ mod tests {
         let mut game_board = GameBoard::default();
         let x = &Piece::X;
 
-        for index in CELL_IDS {
+        for index in 0..=2 {
             _ = place_piece(x, (index, index), &mut game_board);
         }
 
@@ -249,7 +235,9 @@ mod tests {
         let mut game_board = GameBoard::default();
         let x = &Piece::X;
 
-        for (_, (row_index, column_index)) in CELL_IDS.zip(CELL_IDS.rev()).enumerate() {
+        let backward_diagonal_indicies = (0..=2).zip((0..=2).rev()).enumerate();
+
+        for (_, (row_index, column_index)) in backward_diagonal_indicies {
             _ = place_piece(x, (row_index, column_index), &mut game_board);
         }
 
