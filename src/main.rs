@@ -1,6 +1,6 @@
 mod game_model;
 
-use crate::game_model::{determine_winner_of_line, is_winner, place_piece, GameBoard, Piece};
+use crate::game_model::{determine_winner_of_line, place_piece, winner, GameBoard, Piece};
 
 fn main() {
     let mut game_board: GameBoard = Default::default();
@@ -30,6 +30,6 @@ fn main() {
             &game_board2, error
         );
     } else {
-        println!("Winner: {:#?}", is_winner(&game_board2));
+        println!("Winner: {:#?}", winner(&game_board2));
     }
 }
