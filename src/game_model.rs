@@ -31,7 +31,7 @@ pub fn place_piece(
     Ok(())
 }
 
-pub fn determine_winner_of_line<'a>(line: &'a Vec<&'a CellState>) -> Option<&'a Piece> {
+pub fn determine_winner_of_line<'a>(line: &'a [&'a CellState]) -> Option<&'a Piece> {
     // Lifetimes required here to guarantee that the outgoing type (`Piece`) doesn't
     // outlive the incoming type that it is tied to `CellState`.
 
@@ -57,7 +57,7 @@ pub fn determine_winner_of_line<'a>(line: &'a Vec<&'a CellState>) -> Option<&'a 
 // TODO: Refactor this function to return an optional winning piece instead of Bool.
 pub fn winner(board: &GameBoard) -> Option<Piece> {
     for row in grab_rows(board) {
-        if let Some(piece) = determine_winner_of_line(&row.iter().collect()) {
+        if let Some(piece) = determine_winner_of_line(&row) {
             return Some(piece.to_owned());
         }
     }
@@ -77,8 +77,12 @@ pub fn winner(board: &GameBoard) -> Option<Piece> {
     None
 }
 
-fn grab_rows(board: &GameBoard) -> &[[CellState; 3]] {
-    &board[0..=2]
+fn grab_rows(board: &GameBoard) -> Vec<Vec<&CellState>> {
+    let row0: Vec<_> = board[0].iter().collect();
+    let row1: Vec<_> = board[1].iter().collect();
+    let row2: Vec<_> = board[2].iter().collect();
+
+    vec![row0, row1, row2]
 }
 
 fn grab_columns(board: &GameBoard) -> Vec<Vec<&CellState>> {
@@ -150,11 +154,9 @@ mod tests {
     #[test]
     fn test_empty_row_has_no_winner() {
         let game_board = GameBoard::default();
+        let rows = grab_rows(&game_board);
 
-        assert_eq!(
-            None,
-            determine_winner_of_line(&game_board[0].iter().collect())
-        );
+        assert_eq!(None, determine_winner_of_line(&rows[0]));
     }
 
     #[test]
@@ -167,10 +169,11 @@ mod tests {
             .and_then(|_| place_piece(x, (0, 2), &mut game_board));
 
         assert_eq!(result, Ok(()));
-        assert_eq!(
-            Some(x),
-            determine_winner_of_line(&game_board[0].iter().collect())
-        );
+
+        let rows = grab_rows(&game_board);
+        let first_row = &rows[0];
+
+        assert_eq!(Some(x), determine_winner_of_line(&first_row));
     }
 
     #[test]
@@ -183,10 +186,11 @@ mod tests {
             .and_then(|_| place_piece(o, (0, 2), &mut game_board));
 
         assert_eq!(result, Ok(()));
-        assert_eq!(
-            Some(o),
-            determine_winner_of_line(&game_board[0].iter().collect())
-        );
+
+        let rows = grab_rows(&game_board);
+        let first_row = &rows[0];
+
+        assert_eq!(Some(o), determine_winner_of_line(&first_row));
     }
 
     #[test]
