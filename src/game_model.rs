@@ -54,8 +54,7 @@ pub fn determine_winner_of_line<'a>(line: &'a [&'a CellState]) -> Option<&'a Pie
     }
 }
 
-// TODO: Refactor this function to return an optional winning piece instead of Bool.
-pub fn winner(board: &GameBoard) -> Option<Piece> {
+pub fn determine_winner(board: &GameBoard) -> Option<Piece> {
     for row in grab_rows(board) {
         if let Some(piece) = determine_winner_of_line(&row) {
             return Some(piece.to_owned());
@@ -197,7 +196,7 @@ mod tests {
     fn test_empty_board_has_no_winner() {
         let game_board = GameBoard::default();
 
-        assert_eq!(None, winner(&game_board));
+        assert_eq!(None, determine_winner(&game_board));
     }
 
     #[test]
@@ -210,7 +209,7 @@ mod tests {
             .and_then(|_| place_piece(x, (0, 2), &mut game_board));
 
         assert!(result.is_ok());
-        assert_eq!(Some(x.to_owned()), winner(&game_board));
+        assert_eq!(Some(x.to_owned()), determine_winner(&game_board));
     }
 
     #[test]
@@ -223,7 +222,7 @@ mod tests {
             .and_then(|_| place_piece(x, (2, 0), &mut game_board));
 
         assert!(result.is_ok());
-        assert_eq!(Some(x.to_owned()), winner(&game_board));
+        assert_eq!(Some(x.to_owned()), determine_winner(&game_board));
     }
 
     #[test]
@@ -235,7 +234,7 @@ mod tests {
             _ = place_piece(x, (index, index), &mut game_board);
         }
 
-        assert_eq!(Some(x.to_owned()), winner(&game_board));
+        assert_eq!(Some(x.to_owned()), determine_winner(&game_board));
     }
 
     #[test]
@@ -249,6 +248,6 @@ mod tests {
             _ = place_piece(x, (row_index, column_index), &mut game_board);
         }
 
-        assert_eq!(Some(x.to_owned()), winner(&game_board));
+        assert_eq!(Some(x.to_owned()), determine_winner(&game_board));
     }
 }
