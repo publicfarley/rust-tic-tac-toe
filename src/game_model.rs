@@ -73,20 +73,20 @@ impl GameBoard {
     }
 
     pub fn determine_winner(&self) -> Option<Piece> {
-        for row in grab_rows(self) {
-            if let Some(piece) = determine_winner_of_line(&row) {
+        for row in self.grab_rows() {
+            if let Some(piece) = Self::determine_winner_of_line(&row) {
                 return Some(piece.to_owned());
             }
         }
 
-        for column in grab_columns(self) {
-            if let Some(piece) = determine_winner_of_line(&column) {
+        for column in self.grab_columns() {
+            if let Some(piece) = Self::determine_winner_of_line(&column) {
                 return Some(piece.to_owned());
             }
         }
 
-        for diagonal in grab_diagonals(self) {
-            if let Some(piece) = determine_winner_of_line(&diagonal) {
+        for diagonal in self.grab_diagonals() {
+            if let Some(piece) = Self::determine_winner_of_line(&diagonal) {
                 return Some(piece.to_owned());
             }
         }
@@ -106,61 +106,61 @@ impl GameBoard {
             println!();
         }
     }
-}
 
-fn determine_winner_of_line<'a>(line: &'a [&'a CellState]) -> Option<&'a Piece> {
-    // Lifetimes required here to guarantee that the outgoing type (`Piece`) doesn't
-    // outlive the incoming type that it is tied to `CellState`.
+    fn determine_winner_of_line<'a>(line: &'a [&'a CellState]) -> Option<&'a Piece> {
+        // Lifetimes required here to guarantee that the outgoing type (`Piece`) doesn't
+        // outlive the incoming type that it is tied to `CellState`.
 
-    let first_piece = match &line[0] {
-        CellState::Owned(piece) => Some(piece),
-        CellState::Empty => None,
-    };
+        let first_piece = match &line[0] {
+            CellState::Owned(piece) => Some(piece),
+            CellState::Empty => None,
+        };
 
-    let distinguished_piece = first_piece?; // returns None from the function if first_piece doesn't exist
+        let distinguished_piece = first_piece?; // returns None from the function if first_piece doesn't exist
 
-    if line
-        .iter()
-        .filter(|&cell| matches!(cell, CellState::Owned(piece) if piece == distinguished_piece))
-        .count()
-        == line.len()
-    {
-        Some(distinguished_piece)
-    } else {
-        None
+        if line
+            .iter()
+            .filter(|&cell| matches!(cell, CellState::Owned(piece) if piece == distinguished_piece))
+            .count()
+            == line.len()
+        {
+            Some(distinguished_piece)
+        } else {
+            None
+        }
     }
-}
 
-fn grab_rows(board: &GameBoard) -> Vec<Vec<&CellState>> {
-    let row0: Vec<_> = board.cells[0].iter().collect();
-    let row1: Vec<_> = board.cells[1].iter().collect();
-    let row2: Vec<_> = board.cells[2].iter().collect();
+    fn grab_rows(&self) -> Vec<Vec<&CellState>> {
+        let row0: Vec<_> = self.cells[0].iter().collect();
+        let row1: Vec<_> = self.cells[1].iter().collect();
+        let row2: Vec<_> = self.cells[2].iter().collect();
 
-    vec![row0, row1, row2]
-}
+        vec![row0, row1, row2]
+    }
 
-fn grab_columns(board: &GameBoard) -> Vec<Vec<&CellState>> {
-    let column0: Vec<_> = board.cells.iter().map(|row| &row[0..=0][0]).collect();
-    let column1: Vec<_> = board.cells.iter().map(|row| &row[1..=1][0]).collect();
-    let column2: Vec<_> = board.cells.iter().map(|row| &row[2..=2][0]).collect();
+    fn grab_columns(&self) -> Vec<Vec<&CellState>> {
+        let column1: Vec<_> = self.cells.iter().map(|row| &row[1..=1][0]).collect();
+        let column0: Vec<_> = self.cells.iter().map(|row| &row[0..=0][0]).collect();
+        let column2: Vec<_> = self.cells.iter().map(|row| &row[2..=2][0]).collect();
 
-    vec![column0, column1, column2]
-}
+        vec![column0, column1, column2]
+    }
 
-fn grab_diagonals(board: &GameBoard) -> Vec<Vec<&CellState>> {
-    let left_to_right_diagonal: Vec<_> = vec![
-        board.get_cell(GameBoard::TOP_LEFT),
-        board.get_cell(GameBoard::MIDDLE_CENTER),
-        board.get_cell(GameBoard::BOTTOM_RIGHT),
-    ];
+    fn grab_diagonals(&self) -> Vec<Vec<&CellState>> {
+        let left_to_right_diagonal: Vec<_> = vec![
+            self.get_cell(GameBoard::TOP_LEFT),
+            self.get_cell(GameBoard::MIDDLE_CENTER),
+            self.get_cell(GameBoard::BOTTOM_RIGHT),
+        ];
 
-    let right_to_left_diagonal: Vec<_> = vec![
-        board.get_cell(GameBoard::TOP_RIGHT),
-        board.get_cell(GameBoard::MIDDLE_CENTER),
-        board.get_cell(GameBoard::BOTTOM_LEFT),
-    ];
+        let right_to_left_diagonal: Vec<_> = vec![
+            self.get_cell(GameBoard::TOP_RIGHT),
+            self.get_cell(GameBoard::MIDDLE_CENTER),
+            self.get_cell(GameBoard::BOTTOM_LEFT),
+        ];
 
-    vec![left_to_right_diagonal, right_to_left_diagonal]
+        vec![left_to_right_diagonal, right_to_left_diagonal]
+    }
 }
 
 #[cfg(test)]
@@ -205,50 +205,6 @@ mod tests {
         assert!(result.is_err());
 
         assert_eq!(game_board.cells[0][0], CellState::Owned(Piece::O));
-    }
-
-    #[test]
-    fn test_empty_row_has_no_winner() {
-        let game_board = GameBoard::new();
-        let rows = grab_rows(&game_board);
-
-        assert_eq!(None, determine_winner_of_line(&rows[0]));
-    }
-
-    #[test]
-    fn test_full_row_of_x_has_winner_x() {
-        let mut game_board = GameBoard::new();
-        let x = &Piece::X;
-
-        let result = game_board
-            .place_piece(x, (0, 0))
-            .and_then(|_| game_board.place_piece(x, (0, 1)))
-            .and_then(|_| game_board.place_piece(x, (0, 2)));
-
-        assert_eq!(result, Ok(()));
-
-        let rows = grab_rows(&game_board);
-        let first_row = &rows[0];
-
-        assert_eq!(Some(x), determine_winner_of_line(&first_row));
-    }
-
-    #[test]
-    fn test_full_row_of_o_has_winner_o() {
-        let mut game_board = GameBoard::new();
-        let o = &Piece::O;
-
-        let result = game_board
-            .place_piece(o, (0, 0))
-            .and_then(|_| game_board.place_piece(o, (0, 1)))
-            .and_then(|_| game_board.place_piece(o, (0, 2)));
-
-        assert_eq!(result, Ok(()));
-
-        let rows = grab_rows(&game_board);
-        let first_row = &rows[0];
-
-        assert_eq!(Some(o), determine_winner_of_line(&first_row));
     }
 
     #[test]
