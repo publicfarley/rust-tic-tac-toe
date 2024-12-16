@@ -27,4 +27,6 @@ fn main() {
     } else {
         println!("Winner: {:#?}", game_board2.determine_winner());
     }
+
+    game_board2.display();
 }

@@ -21,6 +21,35 @@ pub struct GameBoard {
     pub cells: [[CellState; 3]; 3],
 }
 
+pub struct Coordinate {
+    row: usize,
+    col: usize,
+}
+
+impl Coordinate {
+    pub fn row(&self) -> usize {
+        self.row
+    }
+
+    pub fn col(&self) -> usize {
+        self.col
+    }
+}
+
+impl GameBoard {
+    pub const TOP_LEFT: Coordinate = Coordinate { row: 0, col: 0 };
+    pub const TOP_CENTER: Coordinate = Coordinate { row: 0, col: 1 };
+    pub const TOP_RIGHT: Coordinate = Coordinate { row: 0, col: 2 };
+
+    pub const MIDDLE_LEFT: Coordinate = Coordinate { row: 1, col: 0 };
+    pub const MIDDLE_CENTER: Coordinate = Coordinate { row: 1, col: 1 };
+    pub const MIDDLE_RIGHT: Coordinate = Coordinate { row: 1, col: 2 };
+
+    pub const BOTTOM_LEFT: Coordinate = Coordinate { row: 2, col: 0 };
+    pub const BOTTOM_CENTER: Coordinate = Coordinate { row: 2, col: 1 };
+    pub const BOTTOM_RIGHT: Coordinate = Coordinate { row: 2, col: 2 };
+}
+
 impl GameBoard {
     pub fn new() -> Self {
         Self {
@@ -28,8 +57,8 @@ impl GameBoard {
         }
     }
 
-    pub fn get_cell(&self, row: usize, col: usize) -> Option<&CellState> {
-        self.cells.get(row).and_then(|r| r.get(col))
+    pub fn get_cell(&self, coordinate: Coordinate) -> &CellState {
+        &self.cells[coordinate.row()][coordinate.col()]
     }
 
     pub fn place_piece(&mut self, piece: &Piece, coordinate: (usize, usize)) -> Result<(), String> {
@@ -63,6 +92,19 @@ impl GameBoard {
         }
 
         None
+    }
+
+    pub fn display(&self) {
+        for row in &self.cells {
+            for cell in row {
+                match cell {
+                    CellState::Empty => print!("[ ] "),
+                    CellState::Owned(Piece::X) => print!("[X] "),
+                    CellState::Owned(Piece::O) => print!("[O] "),
+                }
+            }
+            println!();
+        }
     }
 }
 
@@ -106,10 +148,17 @@ fn grab_columns(board: &GameBoard) -> Vec<Vec<&CellState>> {
 }
 
 fn grab_diagonals(board: &GameBoard) -> Vec<Vec<&CellState>> {
-    let left_to_right_diagonal: Vec<_> =
-        vec![&board.cells[0][0], &board.cells[1][1], &board.cells[2][2]];
-    let right_to_left_diagonal: Vec<_> =
-        vec![&board.cells[0][2], &board.cells[1][1], &board.cells[2][0]];
+    let left_to_right_diagonal: Vec<_> = vec![
+        board.get_cell(GameBoard::TOP_LEFT),
+        board.get_cell(GameBoard::MIDDLE_CENTER),
+        board.get_cell(GameBoard::BOTTOM_RIGHT),
+    ];
+
+    let right_to_left_diagonal: Vec<_> = vec![
+        board.get_cell(GameBoard::TOP_RIGHT),
+        board.get_cell(GameBoard::MIDDLE_CENTER),
+        board.get_cell(GameBoard::BOTTOM_LEFT),
+    ];
 
     vec![left_to_right_diagonal, right_to_left_diagonal]
 }
