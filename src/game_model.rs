@@ -18,9 +18,10 @@ impl Default for CellState {
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct GameBoard {
-    pub cells: [[CellState; 3]; 3],
+    cells: [[CellState; 3]; 3],
 }
 
+#[derive(Debug)]
 pub struct Coordinate {
     row: usize,
     col: usize,
