@@ -1,11 +1,12 @@
 mod game_model;
 
+use game_model::Coordinate;
+
 use crate::game_model::{GameBoard, Piece};
 
 fn main() {
     let mut game_board = GameBoard::new();
-    println!("Empty game board:");
-    game_board.display();
+    println!("Empty game board:\n{game_board}");
     println!();
 
     _ = game_board.place_piece(Piece::O, &GameBoard::TOP_LEFT);
@@ -13,8 +14,12 @@ fn main() {
         "game_board after placing `O` on position: {:#?}",
         GameBoard::TOP_LEFT
     );
-    game_board.display();
+    println!("{game_board}");
     println!();
+
+    if let Some(middle_coordinate) = Coordinate::new(1, 1) {
+        println!("{:#?}", game_board.get_cell(&middle_coordinate));
+    }
 
     let mut game_board2 = GameBoard::new();
 
@@ -23,8 +28,7 @@ fn main() {
         .and_then(|()| game_board2.place_piece(Piece::X, &GameBoard::TOP_CENTER))
         .and_then(|()| game_board2.place_piece(Piece::X, &GameBoard::TOP_RIGHT));
 
-    println!("All Xs on row 0 (Illegal I know)");
-    game_board2.display();
+    println!("All Xs on row 0 (Illegal I know)\n{game_board2}");
     println!();
 
     if let Err(error) = result {
