@@ -193,7 +193,10 @@ mod tests {
         let result = game_board.place_piece(&Piece::X, GameBoard::TOP_LEFT);
 
         assert_eq!(result, Ok(()));
-        assert_eq!(game_board.cells[0][0], CellState::Owned(Piece::X));
+        assert_eq!(
+            *game_board.get_cell(GameBoard::TOP_LEFT),
+            CellState::Owned(Piece::X)
+        );
     }
 
     #[test]
@@ -202,7 +205,10 @@ mod tests {
         let result = game_board.place_piece(&Piece::O, GameBoard::TOP_LEFT);
 
         assert_eq!(result, Ok(()));
-        assert_eq!(game_board.cells[0][0], CellState::Owned(Piece::O));
+        assert_eq!(
+            *game_board.get_cell(GameBoard::TOP_LEFT),
+            CellState::Owned(Piece::O)
+        );
     }
 
     #[test]
@@ -215,7 +221,10 @@ mod tests {
         let result = game_board.place_piece(&Piece::X, GameBoard::TOP_LEFT);
         assert!(result.is_err());
 
-        assert_eq!(game_board.cells[0][0], CellState::Owned(Piece::O));
+        assert_eq!(
+            *game_board.get_cell(GameBoard::TOP_LEFT),
+            CellState::Owned(Piece::O)
+        );
     }
 
     #[test]
