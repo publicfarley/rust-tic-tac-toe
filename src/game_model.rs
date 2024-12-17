@@ -35,11 +35,11 @@ impl fmt::Debug for Coordinate {
 }
 
 impl Coordinate {
-    pub fn row(&self) -> usize {
+    pub const fn row(&self) -> usize {
         self.row
     }
 
-    pub fn col(&self) -> usize {
+    pub const fn col(&self) -> usize {
         self.col
     }
 }
@@ -66,18 +66,18 @@ impl GameBoard {
         }
     }
 
-    pub fn get_cell(&self, coordinate: Coordinate) -> &CellState {
+    pub const fn get_cell(&self, coordinate: &Coordinate) -> &CellState {
         &self.cells[coordinate.row()][coordinate.col()]
     }
 
-    pub fn place_piece(&mut self, piece: &Piece, coordinate: Coordinate) -> Result<(), String> {
+    pub fn place_piece(&mut self, piece: Piece, coordinate: &Coordinate) -> Result<(), String> {
         let cell = &self.cells[coordinate.row()][coordinate.col()];
 
         if matches!(&cell, CellState::Owned(_)) {
             return Err(String::from("Spot on board is alrady occupied"));
         }
 
-        self.cells[coordinate.row()][coordinate.col()] = CellState::Owned(piece.to_owned());
+        self.cells[coordinate.row()][coordinate.col()] = CellState::Owned(piece);
         Ok(())
     }
 
@@ -157,15 +157,15 @@ impl GameBoard {
 
     fn get_diagonals(&self) -> Vec<Vec<&CellState>> {
         let left_to_right_diagonal: Vec<_> = vec![
-            self.get_cell(GameBoard::TOP_LEFT),
-            self.get_cell(GameBoard::MIDDLE_CENTER),
-            self.get_cell(GameBoard::BOTTOM_RIGHT),
+            self.get_cell(&Self::TOP_LEFT),
+            self.get_cell(&Self::MIDDLE_CENTER),
+            self.get_cell(&Self::BOTTOM_RIGHT),
         ];
 
         let right_to_left_diagonal: Vec<_> = vec![
-            self.get_cell(GameBoard::TOP_RIGHT),
-            self.get_cell(GameBoard::MIDDLE_CENTER),
-            self.get_cell(GameBoard::BOTTOM_LEFT),
+            self.get_cell(&Self::TOP_RIGHT),
+            self.get_cell(&Self::MIDDLE_CENTER),
+            self.get_cell(&Self::BOTTOM_LEFT),
         ];
 
         vec![left_to_right_diagonal, right_to_left_diagonal]
@@ -190,11 +190,11 @@ mod tests {
     #[test]
     fn test_place_x_on_empty_cell() {
         let mut game_board = GameBoard::new();
-        let result = game_board.place_piece(&Piece::X, GameBoard::TOP_LEFT);
+        let result = game_board.place_piece(Piece::X, &GameBoard::TOP_LEFT);
 
         assert_eq!(result, Ok(()));
         assert_eq!(
-            *game_board.get_cell(GameBoard::TOP_LEFT),
+            *game_board.get_cell(&GameBoard::TOP_LEFT),
             CellState::Owned(Piece::X)
         );
     }
@@ -202,11 +202,11 @@ mod tests {
     #[test]
     fn test_place_o_on_empty_cell() {
         let mut game_board = GameBoard::new();
-        let result = game_board.place_piece(&Piece::O, GameBoard::TOP_LEFT);
+        let result = game_board.place_piece(Piece::O, &GameBoard::TOP_LEFT);
 
         assert_eq!(result, Ok(()));
         assert_eq!(
-            *game_board.get_cell(GameBoard::TOP_LEFT),
+            *game_board.get_cell(&GameBoard::TOP_LEFT),
             CellState::Owned(Piece::O)
         );
     }
@@ -215,14 +215,14 @@ mod tests {
     fn test_place_piece_on_owned_cell() {
         let mut game_board = GameBoard::new();
         assert!(game_board
-            .place_piece(&Piece::O, GameBoard::TOP_LEFT)
+            .place_piece(Piece::O, &GameBoard::TOP_LEFT)
             .is_ok());
 
-        let result = game_board.place_piece(&Piece::X, GameBoard::TOP_LEFT);
+        let result = game_board.place_piece(Piece::X, &GameBoard::TOP_LEFT);
         assert!(result.is_err());
 
         assert_eq!(
-            *game_board.get_cell(GameBoard::TOP_LEFT),
+            *game_board.get_cell(&GameBoard::TOP_LEFT),
             CellState::Owned(Piece::O)
         );
     }
@@ -237,12 +237,12 @@ mod tests {
     #[test]
     fn test_board_with_a_winning_row_has_a_winner() {
         let mut game_board = GameBoard::new();
-        let x = &Piece::X;
+        let x = Piece::X;
 
         let result = game_board
-            .place_piece(x, GameBoard::TOP_LEFT)
-            .and_then(|_| game_board.place_piece(x, GameBoard::TOP_CENTER))
-            .and_then(|_| game_board.place_piece(x, GameBoard::TOP_RIGHT));
+            .place_piece(x, &GameBoard::TOP_LEFT)
+            .and_then(|_| game_board.place_piece(x, &GameBoard::TOP_CENTER))
+            .and_then(|_| game_board.place_piece(x, &GameBoard::TOP_RIGHT));
 
         assert!(result.is_ok());
         assert_eq!(Some(x.to_owned()), game_board.determine_winner());
@@ -251,12 +251,12 @@ mod tests {
     #[test]
     fn test_board_with_a_winning_column_has_a_winner() {
         let mut game_board = GameBoard::new();
-        let x = &Piece::X;
+        let x = Piece::X;
 
         let result = game_board
-            .place_piece(x, GameBoard::TOP_LEFT)
-            .and_then(|_| game_board.place_piece(x, GameBoard::MIDDLE_LEFT))
-            .and_then(|_| game_board.place_piece(x, GameBoard::BOTTOM_LEFT));
+            .place_piece(x, &GameBoard::TOP_LEFT)
+            .and_then(|_| game_board.place_piece(x, &GameBoard::MIDDLE_LEFT))
+            .and_then(|_| game_board.place_piece(x, &GameBoard::BOTTOM_LEFT));
 
         assert!(result.is_ok());
         assert_eq!(Some(x.to_owned()), game_board.determine_winner());
@@ -265,12 +265,12 @@ mod tests {
     #[test]
     fn test_board_with_a_winning_forward_diagonal_has_a_winner() {
         let mut game_board = GameBoard::new();
-        let x = &Piece::X;
+        let x = Piece::X;
 
         _ = game_board
-            .place_piece(x, GameBoard::TOP_LEFT)
-            .and_then(|_| game_board.place_piece(x, GameBoard::MIDDLE_CENTER))
-            .and_then(|_| game_board.place_piece(x, GameBoard::BOTTOM_RIGHT));
+            .place_piece(x, &GameBoard::TOP_LEFT)
+            .and_then(|_| game_board.place_piece(x, &GameBoard::MIDDLE_CENTER))
+            .and_then(|_| game_board.place_piece(x, &GameBoard::BOTTOM_RIGHT));
 
         assert_eq!(Some(x.to_owned()), game_board.determine_winner());
     }
@@ -278,12 +278,12 @@ mod tests {
     #[test]
     fn test_board_with_a_winning_backward_diagonal_has_a_winner() {
         let mut game_board = GameBoard::new();
-        let x = &Piece::X;
+        let x = Piece::X;
 
         _ = game_board
-            .place_piece(x, GameBoard::TOP_RIGHT)
-            .and_then(|_| game_board.place_piece(x, GameBoard::MIDDLE_CENTER))
-            .and_then(|_| game_board.place_piece(x, GameBoard::BOTTOM_LEFT));
+            .place_piece(x, &GameBoard::TOP_RIGHT)
+            .and_then(|_| game_board.place_piece(x, &GameBoard::MIDDLE_CENTER))
+            .and_then(|_| game_board.place_piece(x, &GameBoard::BOTTOM_LEFT));
 
         assert_eq!(Some(x.to_owned()), game_board.determine_winner());
     }
