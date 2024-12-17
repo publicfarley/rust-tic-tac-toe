@@ -44,6 +44,7 @@ impl Coordinate {
     }
 }
 
+#[allow(dead_code)]
 impl GameBoard {
     pub const TOP_LEFT: Coordinate = Coordinate { row: 0, col: 0 };
     pub const TOP_CENTER: Coordinate = Coordinate { row: 0, col: 1 };
@@ -81,19 +82,19 @@ impl GameBoard {
     }
 
     pub fn determine_winner(&self) -> Option<Piece> {
-        for row in self.grab_rows() {
+        for row in self.get_rows() {
             if let Some(piece) = Self::determine_winner_of_line(&row) {
                 return Some(piece.to_owned());
             }
         }
 
-        for column in self.grab_columns() {
+        for column in self.get_columns() {
             if let Some(piece) = Self::determine_winner_of_line(&column) {
                 return Some(piece.to_owned());
             }
         }
 
-        for diagonal in self.grab_diagonals() {
+        for diagonal in self.get_diagonals() {
             if let Some(piece) = Self::determine_winner_of_line(&diagonal) {
                 return Some(piece.to_owned());
             }
@@ -138,7 +139,7 @@ impl GameBoard {
         }
     }
 
-    fn grab_rows(&self) -> Vec<Vec<&CellState>> {
+    fn get_rows(&self) -> Vec<Vec<&CellState>> {
         let row0: Vec<_> = self.cells[0].iter().collect();
         let row1: Vec<_> = self.cells[1].iter().collect();
         let row2: Vec<_> = self.cells[2].iter().collect();
@@ -146,7 +147,7 @@ impl GameBoard {
         vec![row0, row1, row2]
     }
 
-    fn grab_columns(&self) -> Vec<Vec<&CellState>> {
+    fn get_columns(&self) -> Vec<Vec<&CellState>> {
         let column1: Vec<_> = self.cells.iter().map(|row| &row[1..=1][0]).collect();
         let column0: Vec<_> = self.cells.iter().map(|row| &row[0..=0][0]).collect();
         let column2: Vec<_> = self.cells.iter().map(|row| &row[2..=2][0]).collect();
@@ -154,7 +155,7 @@ impl GameBoard {
         vec![column0, column1, column2]
     }
 
-    fn grab_diagonals(&self) -> Vec<Vec<&CellState>> {
+    fn get_diagonals(&self) -> Vec<Vec<&CellState>> {
         let left_to_right_diagonal: Vec<_> = vec![
             self.get_cell(GameBoard::TOP_LEFT),
             self.get_cell(GameBoard::MIDDLE_CENTER),
