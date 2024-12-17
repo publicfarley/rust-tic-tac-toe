@@ -35,7 +35,7 @@ impl fmt::Debug for Coordinate {
 }
 
 impl Coordinate {
-    pub fn new(row: usize, col: usize) -> Option<Self> {
+    pub const fn new(row: usize, col: usize) -> Option<Self> {
         if row < 3 && col < 3 {
             Some(Self { row, col })
         } else {
@@ -162,10 +162,10 @@ impl fmt::Display for GameBoard {
                     CellState::Owned(Piece::O) => output.push_str("[O] "),
                 }
             }
-            output.push_str("\n")
+            output.push('\n');
         }
 
-        write!(f, "{}", output)
+        write!(f, "{output}")
     }
 }
 
