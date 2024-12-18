@@ -9,6 +9,8 @@ fn main() {
     println!("Empty game board:\n{game_board}");
     println!();
 
+    println!("First up today: {:?}\n", game_board.next_up);
+
     _ = game_board.place_piece(Piece::O, &GameBoard::TOP_LEFT);
     println!(
         "game_board after placing `O` on position: {:#?}",

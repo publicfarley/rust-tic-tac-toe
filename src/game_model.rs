@@ -1,3 +1,4 @@
+use rand::Rng;
 use std::fmt;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -20,6 +21,7 @@ impl Default for CellState {
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct GameBoard {
+    pub next_up: Piece,
     cells: [[CellState; 3]; 3],
 }
 
@@ -70,6 +72,7 @@ impl GameBoard {
 impl GameBoard {
     pub fn new() -> Self {
         Self {
+            next_up: Self::random_piece(),
             cells: [[CellState::default(); 3]; 3],
         }
     }
@@ -147,6 +150,17 @@ impl GameBoard {
         let anti_diagonal = std::array::from_fn(|i| &self.cells[i][2 - i]);
 
         [main_diagonal, anti_diagonal]
+    }
+
+    fn random_piece() -> Piece {
+        let mut random_number_generator = rand::thread_rng();
+        let zero_or_one: u8 = random_number_generator.gen_range(0..=1);
+
+        if zero_or_one == 0 {
+            Piece::O
+        } else {
+            Piece::X
+        }
     }
 }
 
