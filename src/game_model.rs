@@ -7,6 +7,18 @@ pub enum Piece {
     O,
 }
 
+impl fmt::Display for Piece {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut output = String::new();
+        match self {
+            Self::X => output.push('X'),
+            Self::O => output.push('O'),
+        }
+
+        write!(f, "{output}")
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum CellState {
     Empty,
@@ -77,11 +89,21 @@ impl GameBoard {
         }
     }
 
+    pub fn new_with_first_up(first_up: Piece) -> Self {
+        Self {
+            next_up: first_up,
+            cells: [[CellState::default(); 3]; 3],
+        }
+    }
+
     pub const fn get_cell(&self, coordinate: &Coordinate) -> &CellState {
         &self.cells[coordinate.row()][coordinate.col()]
     }
 
     pub fn place_piece(&mut self, piece: Piece, coordinate: &Coordinate) -> Result<(), String> {
+        if piece != self.next_up {
+            return Err(format!("{piece} cannot play at this point"));
+        }
         let cell = &self.cells[coordinate.row()][coordinate.col()];
 
         if matches!(&cell, CellState::Owned(_)) {
@@ -89,6 +111,12 @@ impl GameBoard {
         }
 
         self.cells[coordinate.row()][coordinate.col()] = CellState::Owned(piece);
+        if piece == Piece::X {
+            self.next_up = Piece::O;
+        } else {
+            self.next_up = Piece::X;
+        }
+
         Ok(())
     }
 
@@ -179,6 +207,7 @@ impl fmt::Display for GameBoard {
             output.push('\n');
         }
 
+        output.pop();
         write!(f, "{output}")
     }
 }
@@ -207,7 +236,7 @@ mod tests {
 
     #[test]
     fn test_place_x_on_empty_cell() {
-        let mut game_board = GameBoard::new();
+        let mut game_board = GameBoard::new_with_first_up(Piece::X);
         let result = game_board.place_piece(Piece::X, &GameBoard::TOP_LEFT);
 
         assert_eq!(result, Ok(()));
@@ -219,7 +248,7 @@ mod tests {
 
     #[test]
     fn test_place_o_on_empty_cell() {
-        let mut game_board = GameBoard::new();
+        let mut game_board = GameBoard::new_with_first_up(Piece::O);
         let result = game_board.place_piece(Piece::O, &GameBoard::TOP_LEFT);
 
         assert_eq!(result, Ok(()));
@@ -231,7 +260,7 @@ mod tests {
 
     #[test]
     fn test_place_piece_on_owned_cell() {
-        let mut game_board = GameBoard::new();
+        let mut game_board = GameBoard::new_with_first_up(Piece::O);
         assert!(game_board
             .place_piece(Piece::O, &GameBoard::TOP_LEFT)
             .is_ok());
@@ -255,54 +284,81 @@ mod tests {
     #[test]
     fn test_board_with_a_winning_row_has_a_winner() {
         let mut game_board = GameBoard::new();
-        let x = &Piece::X;
+        let turn_order = turn_order(&game_board);
+        let first_up = turn_order[0];
+        let second_up = turn_order[1];
 
         let result = game_board
-            .place_piece(*x, &GameBoard::TOP_LEFT)
-            .and_then(|_| game_board.place_piece(*x, &GameBoard::TOP_CENTER))
-            .and_then(|_| game_board.place_piece(*x, &GameBoard::TOP_RIGHT));
+            .place_piece(first_up, &GameBoard::TOP_LEFT)
+            .and_then(|_| game_board.place_piece(second_up, &GameBoard::MIDDLE_LEFT))
+            .and_then(|_| game_board.place_piece(first_up, &GameBoard::TOP_CENTER))
+            .and_then(|_| game_board.place_piece(second_up, &GameBoard::BOTTOM_LEFT))
+            .and_then(|_| game_board.place_piece(first_up, &GameBoard::TOP_RIGHT));
 
         assert!(result.is_ok());
-        assert_eq!(Some(x), game_board.determine_winner());
+        assert_eq!(Some(&first_up), game_board.determine_winner());
     }
 
     #[test]
     fn test_board_with_a_winning_column_has_a_winner() {
         let mut game_board = GameBoard::new();
-        let x = &Piece::X;
+        let turn_order = turn_order(&game_board);
+        let first_up = turn_order[0];
+        let second_up = turn_order[1];
 
         let result = game_board
-            .place_piece(*x, &GameBoard::TOP_LEFT)
-            .and_then(|_| game_board.place_piece(*x, &GameBoard::MIDDLE_LEFT))
-            .and_then(|_| game_board.place_piece(*x, &GameBoard::BOTTOM_LEFT));
+            .place_piece(first_up, &GameBoard::TOP_LEFT)
+            .and_then(|_| game_board.place_piece(second_up, &GameBoard::TOP_CENTER))
+            .and_then(|_| game_board.place_piece(first_up, &GameBoard::MIDDLE_LEFT))
+            .and_then(|_| game_board.place_piece(second_up, &GameBoard::TOP_RIGHT))
+            .and_then(|_| game_board.place_piece(first_up, &GameBoard::BOTTOM_LEFT));
 
         assert!(result.is_ok());
-        assert_eq!(Some(x), game_board.determine_winner());
+        assert_eq!(Some(&first_up), game_board.determine_winner());
     }
 
     #[test]
     fn test_board_with_a_winning_forward_diagonal_has_a_winner() {
         let mut game_board = GameBoard::new();
-        let x = &Piece::X;
+        let turn_order = turn_order(&game_board);
+        let first_up = turn_order[0];
+        let second_up = turn_order[1];
 
         _ = game_board
-            .place_piece(*x, &GameBoard::TOP_LEFT)
-            .and_then(|_| game_board.place_piece(*x, &GameBoard::MIDDLE_CENTER))
-            .and_then(|_| game_board.place_piece(*x, &GameBoard::BOTTOM_RIGHT));
+            .place_piece(first_up, &GameBoard::TOP_LEFT)
+            .and_then(|_| game_board.place_piece(second_up, &GameBoard::BOTTOM_CENTER))
+            .and_then(|_| game_board.place_piece(first_up, &GameBoard::MIDDLE_CENTER))
+            .and_then(|_| game_board.place_piece(second_up, &GameBoard::BOTTOM_LEFT))
+            .and_then(|_| game_board.place_piece(first_up, &GameBoard::BOTTOM_RIGHT));
 
-        assert_eq!(Some(x), game_board.determine_winner());
+        assert_eq!(Some(&first_up), game_board.determine_winner());
     }
 
     #[test]
     fn test_board_with_a_winning_backward_diagonal_has_a_winner() {
         let mut game_board = GameBoard::new();
-        let x = &Piece::X;
+        let turn_order = turn_order(&game_board);
+        let first_up = turn_order[0];
+        let second_up = turn_order[1];
 
         _ = game_board
-            .place_piece(*x, &GameBoard::TOP_RIGHT)
-            .and_then(|_| game_board.place_piece(*x, &GameBoard::MIDDLE_CENTER))
-            .and_then(|_| game_board.place_piece(*x, &GameBoard::BOTTOM_LEFT));
+            .place_piece(first_up, &GameBoard::TOP_RIGHT)
+            .and_then(|_| game_board.place_piece(second_up, &GameBoard::MIDDLE_RIGHT))
+            .and_then(|_| game_board.place_piece(first_up, &GameBoard::MIDDLE_CENTER))
+            .and_then(|_| game_board.place_piece(second_up, &GameBoard::BOTTOM_RIGHT))
+            .and_then(|_| game_board.place_piece(first_up, &GameBoard::BOTTOM_LEFT));
 
-        assert_eq!(Some(x), game_board.determine_winner());
+        assert_eq!(Some(&first_up), game_board.determine_winner());
+    }
+
+    fn turn_order(game_board: &GameBoard) -> [Piece; 2] {
+        let first_up = game_board.next_up;
+        let second_up = if first_up == Piece::O {
+            Piece::X
+        } else {
+            Piece::O
+        };
+
+        [first_up, second_up]
     }
 }
