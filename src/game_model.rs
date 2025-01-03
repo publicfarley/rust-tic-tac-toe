@@ -39,10 +39,10 @@ pub enum Player {
 }
 
 impl Player {
-    pub fn name(&self) -> String {
+    pub const fn name(&self) -> &str {
         match self {
-            Self::Computer(_) => "Computer".to_string(),
-            Self::Human(_) => "Human".to_string(),
+            Self::Computer(_) => "Computer",
+            Self::Human(_) => "Human",
         }
     }
 
@@ -133,13 +133,13 @@ impl GameBoard {
         }
     }
 
-    pub fn get_cell_at_position(&self, position: usize) -> Option<&CellState> {
+    fn get_cell_at_position(&self, position: usize) -> Option<&CellState> {
         let coordinate = Self::coordinate_at_position(position)?;
 
         Some(&self.cells[coordinate.row()][coordinate.col()])
     }
 
-    pub fn set_cell_at_position(&mut self, cell: CellState, position: usize) -> Result<(), String> {
+    fn set_cell_at_position(&mut self, cell: CellState, position: usize) -> Result<(), String> {
         let Some(coordinate) = Self::coordinate_at_position(position) else {
             return Err(format!("{position} is not a valid game board position"));
         };
@@ -209,7 +209,7 @@ impl GameBoard {
         }
     }
 
-    pub const fn coordinate_at_position(position: usize) -> Option<Coordinate> {
+    const fn coordinate_at_position(position: usize) -> Option<Coordinate> {
         match position {
             1 => Some(Coordinate::TOP_LEFT),
             3 => Some(Coordinate::TOP_RIGHT),
