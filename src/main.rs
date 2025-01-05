@@ -44,6 +44,7 @@ fn game_loop(game_board: &mut GameBoard) -> String {
         match turn_result {
             Ok(()) => {
                 let winner = game_board.determine_winning_player();
+
                 match winner {
                     Some(player) => match player {
                         Player::Human(piece) => {
@@ -67,7 +68,7 @@ fn game_loop(game_board: &mut GameBoard) -> String {
                 if error == "exit" {
                     game_end_message = "\nExiting the game".to_string();
                 } else {
-                    // Continue looping
+                    // Output the error condition and continue looping
                     println!("\nError: {error:?}");
                 }
             }
