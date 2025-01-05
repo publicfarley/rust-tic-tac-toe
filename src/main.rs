@@ -23,17 +23,15 @@ fn main() {
         ),
     };
 
-    match game_loop(&mut game_board) {
-        Ok(message) => {
-            println!("{message}\n");
-            println!("Thanks, play again soon!");
-        }
-        Err(error) => println!("{error:#?}"),
-    }
+    let game_end_message = game_loop(&mut game_board);
+    println!("{game_end_message}");
+    println!("Thanks, play again soon!");
 }
 
-fn game_loop(game_board: &mut GameBoard) -> Result<String, String> {
-    loop {
+fn game_loop(game_board: &mut GameBoard) -> String {
+    let mut game_end_message = String::new();
+
+    while game_end_message.is_empty() {
         let next_player_up = game_board.player_for_id(game_board.next_up);
 
         let turn_result = match next_player_up {
@@ -48,17 +46,18 @@ fn game_loop(game_board: &mut GameBoard) -> Result<String, String> {
                 let winner = game_board.determine_winning_player();
                 match winner {
                     Some(player) => match player {
-                        Player::Human(piece) => break Ok(format!("\n✨{piece}✨ You won! 🥇")),
+                        Player::Human(piece) => {
+                            game_end_message = format!("\n✨{piece}✨ You won! 🥇");
+                        }
                         Player::Computer(piece) => {
-                            break Ok(format!("\n✨{piece}✨ The computer won! 🥇"))
+                            game_end_message = format!("\n✨{piece}✨ The computer won! 🥇");
                         }
                     },
 
                     None => {
                         if game_board.is_board_full() {
-                            break Ok(
-                                "\nThis game results in a draw. The board is full.".to_string()
-                            );
+                            game_end_message =
+                                "\nThis game results in a draw. The board is full.".to_string();
                         }
                     }
                 }
@@ -66,14 +65,16 @@ fn game_loop(game_board: &mut GameBoard) -> Result<String, String> {
 
             Err(error) => {
                 if error == "exit" {
-                    break Ok("\nExiting the game".to_string());
+                    game_end_message = "\nExiting the game".to_string();
+                } else {
+                    // Continue looping
+                    println!("\nError: {error:?}");
                 }
-
-                // Continue looping
-                println!("\nError: {error:?}");
             }
         }
     }
+
+    game_end_message
 }
 
 fn execute_computer_turn(game_board: &mut GameBoard) -> Result<(), String> {
