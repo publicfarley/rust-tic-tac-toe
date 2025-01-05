@@ -479,7 +479,7 @@ mod tests {
     }
 
     #[test]
-    fn test_invalid_cell_positions_return_invalid_cells() {
+    fn test_invalid_cell_positions_return_none() {
         let game_board = GameBoard::new();
 
         assert_eq!(game_board.get_cell_at_position(0), None);
