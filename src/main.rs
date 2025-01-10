@@ -136,7 +136,8 @@ fn display_spinner_with_message(message: &str) {
         }
     };
 
-    for i in 0..32 {
+    let iterations = 0..32;
+    for i in iterations {
         // Use modulus to cycle through the spinner characters
         let spinner_value = spinner_chars[i % spinner_chars.len()];
 
