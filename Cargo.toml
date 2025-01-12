@@ -4,4 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+cargo-llvm-cov = "0.6.15"
 rand = "0.8.5"

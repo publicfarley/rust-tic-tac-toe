@@ -371,7 +371,7 @@ mod tests {
         let mut game_board = new_with_first_up(Player::Computer(Piece::X));
         let result = game_board.play_next_up_at_position(1);
 
-        assert_eq!(result, Ok(()));
+        assert!(result.is_ok());
         assert_eq!(
             game_board.get_cell_at_position(1),
             Some(&CellState::Occupied(Piece::X))
@@ -383,7 +383,7 @@ mod tests {
         let mut game_board = new_with_first_up(Player::Computer(Piece::O));
         let result = game_board.play_next_up_at_position(1);
 
-        assert_eq!(result, Ok(()));
+        assert!(result.is_ok());
         assert_eq!(
             game_board.get_cell_at_position(1),
             Some(&CellState::Occupied(Piece::O))
@@ -549,7 +549,157 @@ mod tests {
         );
     }
 
-    fn get_cell_at_coordinate<'a>(
+    #[test]
+    fn test_player_id() {
+        let game_board = GameBoard::new();
+
+        assert_eq!(
+            *game_board.player_for_id(PlayerID::Player1),
+            game_board.player_1
+        );
+        assert_eq!(
+            *game_board.player_for_id(PlayerID::Player2),
+            game_board.player_2
+        );
+    }
+
+    #[test]
+    fn test_determine_winning_player_resolves_to_x_if_x_wins() {
+        let mut game_board = new_with_first_up(Player::Computer(Piece::X));
+
+        let result = game_board
+            .play_next_up_at_position(1)
+            .and_then(|_| game_board.play_next_up_at_position(4))
+            .and_then(|_| game_board.play_next_up_at_position(2))
+            .and_then(|_| game_board.play_next_up_at_position(6))
+            .and_then(|_| game_board.play_next_up_at_position(3));
+
+        assert!(result.is_ok());
+        assert!(matches!(
+            game_board.determine_winning_player(),
+            Some(&Player::Computer(Piece::X))
+        ));
+    }
+
+    #[test]
+    fn test_determine_winning_player_resolves_to_o_if_o_wins() {
+        let mut game_board = new_with_first_up(Player::Computer(Piece::O));
+
+        let assertion = |game_board: &GameBoard| {
+            assert!(matches!(
+                game_board.determine_winning_player(),
+                Some(&Player::Computer(Piece::O))
+            ));
+
+            Ok(())
+        };
+
+        let result = game_board
+            .play_next_up_at_position(1)
+            .and_then(|_| game_board.play_next_up_at_position(4))
+            .and_then(|_| game_board.play_next_up_at_position(2))
+            .and_then(|_| game_board.play_next_up_at_position(6))
+            .and_then(|_| game_board.play_next_up_at_position(3))
+            .and_then(|_| assertion(&game_board));
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_determine_winning_player_resolves_to_none_if_there_is_no_winner() {
+        let mut game_board = new_with_first_up(Player::Computer(Piece::O));
+
+        let result = game_board.play_next_up_at_position(1);
+
+        assert!(result.is_ok());
+        assert!(matches!(game_board.determine_winning_player(), None));
+    }
+
+    #[test]
+    fn test_winning_player_can_be_player_2() {
+        let first_up = Player::Computer(Piece::O);
+        let _second_up = Player::Human(Piece::X);
+
+        let mut game_board = new_with_first_up(first_up);
+
+        let result = game_board
+            .play_next_up_at_position(9)
+            .and_then(|_| game_board.play_next_up_at_position(1))
+            .and_then(|_| game_board.play_next_up_at_position(4))
+            .and_then(|_| game_board.play_next_up_at_position(2))
+            .and_then(|_| game_board.play_next_up_at_position(7))
+            .and_then(|_| game_board.play_next_up_at_position(3));
+
+        assert!(result.is_ok());
+        assert!(matches!(
+            game_board.determine_winning_player(),
+            Some(_second_up)
+        ));
+    }
+
+    #[test]
+    fn test_board_is_full() {
+        let mut game_board = GameBoard::new();
+        GameBoard::POSITIONS.for_each(|position| _ = game_board.play_next_up_at_position(position));
+
+        assert!(game_board.is_board_full());
+    }
+
+    #[test]
+    fn test_empty_board_is_not_full() {
+        let game_board = GameBoard::new();
+
+        assert!(!game_board.is_board_full());
+    }
+
+    #[test]
+    fn test_board_with_less_than_9_positions_is_not_full() {
+        let mut game_board = GameBoard::new();
+
+        let all_positions = GameBoard::POSITIONS;
+        let end_position = all_positions.end();
+        let new_end_position = *end_position - 1;
+        let less_than_all_positions = *all_positions.start()..=new_end_position;
+
+        less_than_all_positions
+            .for_each(|position| _ = game_board.play_next_up_at_position(position));
+
+        assert!(!game_board.is_board_full());
+    }
+
+    #[test]
+    fn test_get_random_available_position_is_a_not_none() {
+        let random_position = GameBoard::new().get_random_available_position();
+
+        assert!(matches!(random_position, Some(_)));
+    }
+
+    #[test]
+    fn test_name_of_human_player() {
+        let human_name = "Human";
+
+        assert_eq!(human_name, Player::Human(Piece::X).name());
+        assert_eq!(human_name, Player::Human(Piece::O).name());
+    }
+
+    #[test]
+    fn test_name_of_computer_player() {
+        let computer_name = "Computer";
+
+        assert_eq!(computer_name, Player::Computer(Piece::X).name());
+        assert_eq!(computer_name, Player::Computer(Piece::O).name());
+    }
+
+    #[test]
+    fn test_piece_retrieval() {
+        assert_eq!(&Piece::X, Player::Computer(Piece::X).piece());
+        assert_eq!(&Piece::O, Player::Computer(Piece::O).piece());
+        assert_eq!(&Piece::X, Player::Human(Piece::X).piece());
+        assert_eq!(&Piece::O, Player::Human(Piece::O).piece());
+    }
+
+    // Private test utility functions
+    const fn get_cell_at_coordinate<'a>(
         game_board: &'a GameBoard,
         coordinate: &Coordinate,
     ) -> &'a CellState {
