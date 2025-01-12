@@ -640,7 +640,9 @@ mod tests {
     #[test]
     fn test_board_is_full() {
         let mut game_board = GameBoard::new();
-        GameBoard::POSITIONS.for_each(|position| _ = game_board.play_next_up_at_position(position));
+        GameBoard::POSITIONS..for_each(|position| {
+            _ = game_board.play_next_up_at_position(position)
+        });
 
         assert!(game_board.is_board_full());
     }
