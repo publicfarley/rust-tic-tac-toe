@@ -8,13 +8,19 @@ pub enum Piece {
     O,
 }
 
+impl Piece {
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::O => "O",
+            Self::X => "X",
+        }
+    }
+}
+
 impl fmt::Display for Piece {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut output = String::new();
-        match self {
-            Self::X => output.push('X'),
-            Self::O => output.push('O'),
-        }
+        output.push_str(self.name());
 
         write!(f, "{output}")
     }
@@ -39,7 +45,7 @@ pub enum Player {
 }
 
 impl Player {
-    pub const fn name(&self) -> &str {
+    pub const fn name(&self) -> &'static str {
         match self {
             Self::Computer(_) => "Computer",
             Self::Human(_) => "Human",
@@ -338,8 +344,10 @@ impl fmt::Display for GameBoard {
             for cell in row {
                 match cell {
                     CellState::Empty => output.push_str("[ ] "),
-                    CellState::Occupied(Piece::X) => output.push_str("[X] "),
-                    CellState::Occupied(Piece::O) => output.push_str("[O] "),
+                    CellState::Occupied(piece) => {
+                        let occupied_cell = format!("[{}] ", piece.name());
+                        output.push_str(occupied_cell.as_str());
+                    }
                 }
             }
             output.push('\n');
