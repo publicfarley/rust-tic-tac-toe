@@ -161,7 +161,7 @@ impl GameBoard {
         };
 
         if matches!(&cell, CellState::Occupied(_)) {
-            return Err(String::from("Spot on board is alrady occupied"));
+            return Err(String::from("Spot on board is already occupied"));
         }
 
         let next_piece = match self.next_up {
