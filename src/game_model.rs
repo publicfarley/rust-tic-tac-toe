@@ -38,6 +38,15 @@ impl Default for CellState {
     }
 }
 
+impl CellState {
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::Empty => "   ",
+            Self::Occupied(piece) => piece.name(),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Player {
     Computer(Piece),
@@ -139,7 +148,7 @@ impl GameBoard {
         }
     }
 
-    fn get_cell_at_position(&self, position: usize) -> Option<&CellState> {
+    pub fn get_cell_at_position(&self, position: usize) -> Option<&CellState> {
         let coordinate = Self::coordinate_at_position(position)?;
 
         Some(&self.cells[coordinate.row()][coordinate.col()])

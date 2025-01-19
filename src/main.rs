@@ -1,11 +1,11 @@
 mod game_model;
-use crate::game_model::{GameBoard, Player};
+use crate::game_model::{CellState, GameBoard, Player};
 
 use std::io::{self, Write};
 use std::thread;
 use std::time::Duration;
 
-fn main() {
+fn main_() {
     let mut game_board = GameBoard::new();
     println!("\nWelcome to Rusty 🦀 Tic Tac Toe:\n{game_board}");
 
@@ -150,3 +150,30 @@ fn display_spinner_with_message(message: &str) {
     let clear_message = ' '.to_string().repeat(message.len());
     display_character(&clear_message, ' ');
 }
+
+use eframe::egui;
+
+fn main() {
+    let options = eframe::NativeOptions::default();
+    _ = eframe::run_native("Tic Tac Toe", options, Box::new(|_cc| Box::new(GameBoard::new())));
+}
+
+impl eframe::App for GameBoard {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.heading("Tic Tac Toe");
+            for row in [1,4,7].iter() {
+                ui.horizontal(|ui| {
+                    for col in 0..3 {
+                        let position: usize = row + col;
+                        let button = ui.button(self.get_cell_at_position(position).unwrap().name());
+                        if button.clicked() && self.get_cell_at_position(position) == Some(&CellState::Empty) {
+                            _ = self.play_next_up_at_position(position);
+                        }
+                    }
+                });
+            }
+        });
+    }
+}
+
