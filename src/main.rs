@@ -155,25 +155,107 @@ use eframe::egui;
 
 fn main() {
     let options = eframe::NativeOptions::default();
-    _ = eframe::run_native("Tic Tac Toe", options, Box::new(|_cc| Box::new(GameBoard::new())));
+    _ = eframe::run_native(
+        "Tic Tac Toe",
+        options,
+        Box::new(|_cc| Box::new(GameBoard::new())),
+    );
 }
 
 impl eframe::App for GameBoard {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("Tic Tac Toe");
-            for row in [1,4,7].iter() {
-                ui.horizontal(|ui| {
-                    for col in 0..3 {
-                        let position: usize = row + col;
-                        let button = ui.button(self.get_cell_at_position(position).unwrap().name());
-                        if button.clicked() && self.get_cell_at_position(position) == Some(&CellState::Empty) {
-                            _ = self.play_next_up_at_position(position);
+            // Define the size of the board
+            let board_size = 300.0;
+            let cell_size = board_size / 3.0;
+
+            // Create a painter to draw the grid and marks
+            let (response, painter) =
+                ui.allocate_painter(egui::Vec2::splat(board_size), egui::Sense::click());
+
+            // Draw the grid lines
+            for i in 1..3 {
+                let offset = i as f32 * cell_size;
+                // Vertical lines
+                painter.line_segment(
+                    [egui::pos2(offset, 0.0), egui::pos2(offset, board_size)],
+                    (2.0, egui::Color32::BLACK),
+                );
+                // Horizontal lines
+                painter.line_segment(
+                    [egui::pos2(0.0, offset), egui::pos2(board_size, offset)],
+                    (2.0, egui::Color32::BLACK),
+                );
+            }
+
+            // Draw X and O marks on the board
+            for row in 0..3 {
+                for col in 0..3 {
+                    let row_id: usize = match row {
+                        0 => 1,
+                        1 => 4,
+                        2 => 7,
+                        _ => 0,
+                    };
+                    let position: usize = row_id + col;
+                    let mark = self.get_cell_at_position(position).unwrap();
+
+                    match mark {
+                        CellState::Empty => (),
+                        CellState::Occupied(piece) => {
+                            let center = egui::pos2(
+                                col as f32 * cell_size + cell_size / 2.0,
+                                row as f32 * cell_size + cell_size / 2.0,
+                            );
+
+                            match piece {
+                                game_model::Piece::X => {
+                                    painter.line_segment(
+                                        [
+                                            egui::pos2(center.x - 20.0, center.y - 20.0),
+                                            egui::pos2(center.x + 20.0, center.y + 20.0),
+                                        ],
+                                        (2.0, egui::Color32::RED),
+                                    );
+                                    painter.line_segment(
+                                        [
+                                            egui::pos2(center.x + 20.0, center.y - 20.0),
+                                            egui::pos2(center.x - 20.0, center.y + 20.0),
+                                        ],
+                                        (2.0, egui::Color32::RED),
+                                    );
+                                }
+                                game_model::Piece::O => {
+                                    painter.circle_stroke(center, 20.0, (2.0, egui::Color32::BLUE));
+                                }
+                            }
                         }
                     }
-                });
+                }
+            }
+
+            // Handle mouse clicks to update the board
+            if response.clicked() {
+                if let Some(pos) = response.hover_pos() {
+                    let col = (pos.x / cell_size).floor() as usize;
+                    let row = (pos.y / cell_size).floor() as usize;
+
+                    let row_id: usize = match row {
+                        0 => 1,
+                        1 => 4,
+                        2 => 7,
+                        _ => 0,
+                    };
+
+                    let position = row_id + col;
+
+                    if position < 10
+                        && self.get_cell_at_position(position) == Some(&CellState::Empty)
+                    {
+                        _ = self.play_next_up_at_position(position);
+                    }
+                }
             }
         });
     }
 }
-
