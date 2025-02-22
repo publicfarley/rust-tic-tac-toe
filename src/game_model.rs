@@ -38,15 +38,6 @@ impl Default for CellState {
     }
 }
 
-impl CellState {
-    pub const fn name(self) -> &'static str {
-        match self {
-            Self::Empty => "   ",
-            Self::Occupied(piece) => piece.name(),
-        }
-    }
-}
-
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Player {
     Computer(Piece),
@@ -125,7 +116,7 @@ impl Coordinate {
 }
 
 impl GameBoard {
-    const POSITIONS: RangeInclusive<usize> = 1..=9;
+    pub const POSITIONS: RangeInclusive<usize> = 1..=9;
 
     pub fn new() -> Self {
         let random_piece = Self::random_piece();
@@ -190,6 +181,15 @@ impl GameBoard {
         };
 
         Ok(())
+    }
+
+    pub fn is_computers_turn(&self) -> bool {
+        let next_player = self.player_for_id(self.next_up);
+
+        match next_player {
+            Player::Computer(_) => true,
+            Player::Human(_) => false,
+        }
     }
 
     fn determine_winner(&self) -> Option<&Piece> {
