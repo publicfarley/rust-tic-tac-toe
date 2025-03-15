@@ -367,8 +367,21 @@ impl fmt::Display for GameBoard {
     }
 }
 
+pub fn execute_computer_turn(game_board: &mut GameBoard) -> Result<(), String> {
+    game_board.get_random_available_position().map_or_else(
+        || Err("No available positions".to_string()),
+        |position| {
+            // display_spinner_with_message("The computer is thinking...");
+            let piece = game_board.player_for_id(game_board.next_up).piece();
+            println!("\nThe computer played {piece} in position: {position}");
+            game_board.play_next_up_at_position(position)
+        },
+    )
+}
+
 #[cfg(test)]
 mod tests {
+    use Piece::O;
     use super::*;
 
     #[test]
@@ -397,26 +410,26 @@ mod tests {
 
     #[test]
     fn test_place_o_on_empty_cell() {
-        let mut game_board = new_with_first_up(Player::Computer(Piece::O));
+        let mut game_board = new_with_first_up(Player::Computer(O));
         let result = game_board.play_next_up_at_position(1);
 
         assert!(result.is_ok());
         assert_eq!(
             game_board.get_cell_at_position(1),
-            Some(&CellState::Occupied(Piece::O))
+            Some(&CellState::Occupied(O))
         );
     }
 
     #[test]
     fn test_place_piece_on_occupied_cell() {
-        let mut game_board = new_with_first_up(Player::Computer(Piece::O));
+        let mut game_board = new_with_first_up(Player::Computer(O));
 
         assert!(game_board.play_next_up_at_position(1).is_ok());
         assert!(game_board.play_next_up_at_position(1).is_err());
 
         assert_eq!(
             game_board.get_cell_at_position(1),
-            Some(&CellState::Occupied(Piece::O))
+            Some(&CellState::Occupied(O))
         );
     }
 
@@ -583,15 +596,10 @@ mod tests {
     #[test]
     fn test_determine_winning_player_resolves_to_x_if_x_wins() {
         let mut game_board = new_with_first_up(Player::Computer(Piece::X));
-
-        let result = game_board
-            .play_next_up_at_position(1)
-            .and_then(|_| game_board.play_next_up_at_position(4))
-            .and_then(|_| game_board.play_next_up_at_position(2))
-            .and_then(|_| game_board.play_next_up_at_position(6))
-            .and_then(|_| game_board.play_next_up_at_position(3));
+        let result =  first_player_top_row_win(&mut game_board);
 
         assert!(result.is_ok());
+
         assert!(matches!(
             game_board.determine_winning_player(),
             Some(&Player::Computer(Piece::X))
@@ -600,31 +608,20 @@ mod tests {
 
     #[test]
     fn test_determine_winning_player_resolves_to_o_if_o_wins() {
-        let mut game_board = new_with_first_up(Player::Computer(Piece::O));
-
-        let assertion = |game_board: &GameBoard| {
-            assert!(matches!(
-                game_board.determine_winning_player(),
-                Some(&Player::Computer(Piece::O))
-            ));
-
-            Ok(())
-        };
-
-        let result = game_board
-            .play_next_up_at_position(1)
-            .and_then(|_| game_board.play_next_up_at_position(4))
-            .and_then(|_| game_board.play_next_up_at_position(2))
-            .and_then(|_| game_board.play_next_up_at_position(6))
-            .and_then(|_| game_board.play_next_up_at_position(3))
-            .and_then(|_| assertion(&game_board));
+        let mut game_board = new_with_first_up(Player::Computer(O));
+        let result = first_player_top_row_win(&mut game_board);
 
         assert!(result.is_ok());
+
+        assert!(matches!(
+            game_board.determine_winning_player(),
+            Some(&Player::Computer(Piece::O))
+        ));
     }
 
     #[test]
     fn test_determine_winning_player_resolves_to_none_if_there_is_no_winner() {
-        let mut game_board = new_with_first_up(Player::Computer(Piece::O));
+        let mut game_board = new_with_first_up(Player::Computer(O));
 
         let result = game_board.play_next_up_at_position(1);
 
@@ -634,18 +631,12 @@ mod tests {
 
     #[test]
     fn test_winning_player_can_be_player_2() {
-        let first_up = Player::Computer(Piece::O);
+        let first_up = Player::Computer(O);
         let _second_up = Player::Human(Piece::X);
 
         let mut game_board = new_with_first_up(first_up);
 
-        let result = game_board
-            .play_next_up_at_position(9)
-            .and_then(|_| game_board.play_next_up_at_position(1))
-            .and_then(|_| game_board.play_next_up_at_position(4))
-            .and_then(|_| game_board.play_next_up_at_position(2))
-            .and_then(|_| game_board.play_next_up_at_position(7))
-            .and_then(|_| game_board.play_next_up_at_position(3));
+        let result = first_player_top_row_win(&mut game_board);
 
         assert!(result.is_ok());
         assert!(matches!(
@@ -696,7 +687,7 @@ mod tests {
         let human_name = "Human";
 
         assert_eq!(human_name, Player::Human(Piece::X).name());
-        assert_eq!(human_name, Player::Human(Piece::O).name());
+        assert_eq!(human_name, Player::Human(O).name());
     }
 
     #[test]
@@ -704,18 +695,26 @@ mod tests {
         let computer_name = "Computer";
 
         assert_eq!(computer_name, Player::Computer(Piece::X).name());
-        assert_eq!(computer_name, Player::Computer(Piece::O).name());
+        assert_eq!(computer_name, Player::Computer(O).name());
     }
 
     #[test]
     fn test_piece_retrieval() {
         assert_eq!(&Piece::X, Player::Computer(Piece::X).piece());
-        assert_eq!(&Piece::O, Player::Computer(Piece::O).piece());
+        assert_eq!(&O, Player::Computer(O).piece());
         assert_eq!(&Piece::X, Player::Human(Piece::X).piece());
-        assert_eq!(&Piece::O, Player::Human(Piece::O).piece());
+        assert_eq!(&O, Player::Human(O).piece());
     }
 
     // Private test utility functions
+    fn first_player_top_row_win(game_board: &mut GameBoard) -> Result<(), String> {
+        game_board.play_next_up_at_position(1)
+            .and_then(|_| game_board.play_next_up_at_position(4))
+            .and_then(|_| game_board.play_next_up_at_position(2))
+            .and_then(|_| game_board.play_next_up_at_position(7))
+            .and_then(|_| game_board.play_next_up_at_position(3))
+    }
+
     const fn get_cell_at_coordinate<'a>(
         game_board: &'a GameBoard,
         coordinate: &Coordinate,
