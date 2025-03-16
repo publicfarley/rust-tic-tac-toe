@@ -1,7 +1,7 @@
+use crate::game_model;
+use crate::game_model::{execute_computer_turn, CellState, GameBoard, GameState, Player};
 use eframe::egui;
 use eframe::egui::Response;
-use crate::game_model::{execute_computer_turn, CellState, GameBoard, Player};
-use crate::{game_model};
 
 struct TicTacToeApp {
     game_end_message: String,
@@ -28,21 +28,7 @@ pub fn gui_main() {
 
 impl eframe::App for TicTacToeApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        if self.game_end_message.is_empty() {
-            self.game_end_message = update_ui(self, ctx);
-            return;
-        }
-
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                ui.label(
-                    egui::RichText::new(self.game_end_message.to_string())
-                        .size(24.0)
-                        .strong()
-                        .color(egui::Color32::from_rgb(100, 100, 255)),
-                );
-            });
-        });
+        self.game_end_message = update_ui(self, ctx);
     }
 }
 
@@ -62,6 +48,11 @@ fn update_ui(app: &mut TicTacToeApp, ctx: &egui::Context) -> String {
 
         draw_board_contents(&app.game_board, &painter, cell_size);
 
+        if app.game_board.is_game_over() {
+            draw_status_message(ui, &app.game_end_message);
+            return;
+        }
+
         turn_result = if app.game_board.is_computers_turn() {
             execute_computer_turn(&mut app.game_board)
         } else if response.clicked() {
@@ -69,50 +60,39 @@ fn update_ui(app: &mut TicTacToeApp, ctx: &egui::Context) -> String {
                 .update_board_based_on_response(&response, cell_size)
         } else {
             Ok(())
-        }
+        };
+
+        draw_status_message(ui, &app.game_end_message);
     });
 
     handle_turn_result(&turn_result, &app.game_board)
 }
 
+fn draw_status_message(ui: &mut egui::Ui, game_end_message: &str) {
+    ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+        ui.label(
+            egui::RichText::new(game_end_message)
+                .size(24.0)
+                .strong()
+                .color(egui::Color32::from_rgb(100, 100, 255)),
+        );
+    });
+}
+
 fn handle_turn_result(turn_result: &Result<(), String>, game_board: &GameBoard) -> String {
-    let mut game_end_message: String = String::new();
-
     match turn_result {
-        Ok(()) => {
-            let winner = game_board.determine_winning_player();
-
-            match winner {
-                Some(player) => match player {
-                    Player::Human(piece) => {
-                        game_end_message = format!("\n✨{piece}✨ You won! 🥇");
-                    }
-                    Player::Computer(piece) => {
-                        game_end_message = format!("\n✨{piece}✨ The computer won! 🥇");
-                    }
-                },
-
-                None => {
-                    if game_board.is_board_full() {
-                        game_end_message =
-                            "\nThis game results in a draw. The board is full.".to_string();
-                    }
-                }
-            }
-        }
+        Ok(()) => game_board.end_of_game_text(),
 
         Err(error) => {
             if error == "exit" {
-                game_end_message = "\nExiting the game".to_string();
+                "\nExiting the game".to_string()
             } else {
                 // Output the error condition and continue looping
-                game_end_message = String::new();
                 println!("\nError: {error:?}");
+                game_board.end_of_game_text()
             }
         }
-    };
-
-    game_end_message
+    }
 }
 
 fn draw_grid_lines(painter: &egui::Painter, cell_size: f32, board_size: f32) {
@@ -256,5 +236,33 @@ const fn f32_to_usize(f32_value: f32) -> Option<usize> {
         Some(usize_value)
     } else {
         None // Loss in precision occurred.
+    }
+}
+
+impl GameBoard {
+    fn end_of_game_text(&self) -> String {
+        match self.game_state() {
+            GameState::Winner(player) => match player {
+                Player::Human(piece) => format!("You won!\n{piece}"),
+                Player::Computer(piece) => format!("The computer won!\n{piece}"),
+            },
+            GameState::Draw => "\nThis game results in a draw.".to_string(),
+            GameState::InProgress => {
+                let mut text = String::new();
+                text.push_str("The game is still in progress.\n");
+                text.push_str("It's ");
+                let next_player = self.player_for_id(self.next_up);
+                match next_player {
+                    Player::Human(piece) => {
+                        text.push_str(format!("your turn to play {piece}").as_str());
+                    }
+                    Player::Computer(piece) => {
+                        text.push_str(format!("the computer's turn to play {piece}").as_str());
+                    }
+                };
+                text.push('\n');
+                text
+            }
+        }
     }
 }

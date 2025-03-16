@@ -115,6 +115,12 @@ impl Coordinate {
     pub const BOTTOM_RIGHT: Self = Self { row: 2, col: 2 };
 }
 
+pub enum GameState<'a> {
+    Winner(&'a Player),
+    Draw,
+    InProgress,
+}
+
 impl GameBoard {
     pub const POSITIONS: RangeInclusive<usize> = 1..=9;
 
@@ -269,6 +275,23 @@ impl GameBoard {
             .copied()
     }
 
+    pub fn game_state(&self) -> GameState {
+        self.determine_winning_player().map_or_else(
+            || {
+                if self.is_board_full() {
+                    GameState::Draw
+                } else {
+                    GameState::InProgress
+                }
+            },
+            GameState::Winner,
+        )
+    }
+
+    pub fn is_game_over(&self) -> bool {
+        self.determine_winning_player().is_some() || self.is_board_full()
+    }
+
     fn determine_winner_of_line<'a>(line: &[&'a CellState]) -> Option<&'a Piece> {
         // Lifetimes required here to guarantee that the outgoing type (`Piece`) doesn't
         // outlive the incoming type that it is tied to `CellState`.
@@ -381,8 +404,8 @@ pub fn execute_computer_turn(game_board: &mut GameBoard) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use Piece::O;
     use super::*;
+    use Piece::O;
 
     #[test]
     fn test_initial_board_is_empty() {
@@ -596,7 +619,7 @@ mod tests {
     #[test]
     fn test_determine_winning_player_resolves_to_x_if_x_wins() {
         let mut game_board = new_with_first_up(Player::Computer(Piece::X));
-        let result =  first_player_top_row_win(&mut game_board);
+        let result = first_player_top_row_win(&mut game_board);
 
         assert!(result.is_ok());
 
@@ -708,7 +731,8 @@ mod tests {
 
     // Private test utility functions
     fn first_player_top_row_win(game_board: &mut GameBoard) -> Result<(), String> {
-        game_board.play_next_up_at_position(1)
+        game_board
+            .play_next_up_at_position(1)
             .and_then(|_| game_board.play_next_up_at_position(4))
             .and_then(|_| game_board.play_next_up_at_position(2))
             .and_then(|_| game_board.play_next_up_at_position(7))

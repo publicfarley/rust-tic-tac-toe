@@ -1,9 +1,9 @@
-use std::{io, thread};
+use crate::game_model::{execute_computer_turn, GameBoard, GameState, Player};
 use std::io::Write;
 use std::time::Duration;
-use crate::game_model::{execute_computer_turn, GameBoard, Player};
+use std::{io, thread};
 
-pub fn text_main() {
+pub fn cli_main() {
     let mut game_board = GameBoard::new();
     println!("\nWelcome to Rusty 🦀 Tic Tac Toe:\n{game_board}");
 
@@ -45,25 +45,7 @@ fn game_loop(game_board: &mut GameBoard) -> String {
 
         match turn_result {
             Ok(()) => {
-                let winner = game_board.determine_winning_player();
-
-                match winner {
-                    Some(player) => match player {
-                        Player::Human(piece) => {
-                            game_end_message = format!("\n✨{piece}✨ You won! 🥇");
-                        }
-                        Player::Computer(piece) => {
-                            game_end_message = format!("\n✨{piece}✨ The computer won! 🥇");
-                        }
-                    },
-
-                    None => {
-                        if game_board.is_board_full() {
-                            game_end_message =
-                                "\nThis game results in a draw. The board is full.".to_string();
-                        }
-                    }
-                }
+                game_end_message = game_board.game_message();
             }
 
             Err(error) => {
@@ -139,4 +121,17 @@ fn display_spinner_with_message(message: &str) {
 
     let clear_message = ' '.to_string().repeat(message.len());
     display_character(&clear_message, ' ');
+}
+
+impl GameBoard {
+    fn game_message(&self) -> String {
+        match self.game_state() {
+            GameState::Winner(player) => match player {
+                Player::Human(piece) => format!("\n✨{piece}✨ You won! 🥇"),
+                Player::Computer(piece) => format!("\n✨{piece}✨ The computer won! 🥇"),
+            },
+            GameState::Draw => "\nThis game results in a draw.".to_string(),
+            GameState::InProgress => String::new(),
+        }
+    }
 }
