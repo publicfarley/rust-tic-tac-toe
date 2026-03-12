@@ -275,7 +275,7 @@ impl GameBoard {
             .copied()
     }
 
-    pub fn game_state(&self) -> GameState {
+    pub fn game_state(&self) -> GameState<'_> {
         self.determine_winning_player().map_or_else(
             || {
                 if self.is_board_full() {
